@@ -1,0 +1,26 @@
+# python_solution.ipynb
+import pandas as pd
+
+# Load data
+df = pd.read_csv("sample_data.csv")
+
+# Group by device and service
+summary = df.groupby(['device_type', 'service_name']).agg(
+    total_seconds=('usage_duration_sec', 'sum'),
+    avg_daily_seconds=('usage_duration_sec', 'mean')
+).reset_index()
+
+# Add derived metrics
+summary['total_usage_hrs'] = (summary['total_seconds'] / 3600).round(2)
+summary['pct_of_total'] = (summary['total_seconds'] / summary['total_seconds'].sum() * 100).round(2)
+
+# Sort for insight
+summary = summary.sort_values('pct_of_total', ascending=False)
+print(summary)
+
+# Optional: Plot
+import matplotlib.pyplot as plt
+summary.plot(kind='barh', y='pct_of_total', x='service_name', title="Service Usage Share (%)")
+plt.xlabel("Usage Share (%)")
+plt.tight_layout()
+plt.show()

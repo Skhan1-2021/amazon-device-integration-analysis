@@ -1,0 +1,11 @@
+usage_id,device_id,service_name,usage_duration_sec,date,device_type,customer_id
+1,D001,"Prime Video",1800,2025-03-01,Echo,C100
+2,D002,"Amazon Music",1200,2025-03-01,Fire TV,C101
+3,D001,"Alexa Commands",300,2025-03-01,Echo,C100
+4,D003,"Prime Video",2700,2025-03-01,Kindle,C102
+5,D002,"Prime Video",900,2025-03-02,Fire TV,C101
+6,D003,"Reading App",600,2025-03-02,Kindle,C102
+7,D001,"Amazon Music",1500,2025-03-02,Echo,C100
+8,D002,"Alexa Shopping",450,2025-03-03,Fire TV,C101
+9,D003,"Prime Video",1800,2025-03-03,Kindle,C102
+10,D001,"Prime Video",2100,2025-03-03,Echo,C100

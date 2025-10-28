@@ -1,0 +1,36 @@
+-- sql_solution.sql
+-- Amazon Data Analyst Interview Solution
+-- Analyzing device usage across Echo, Fire TV, Kindle
+
+WITH daily_engagement AS (
+    SELECT
+        d.device_type,
+        su.service_name,
+        su.date,
+        SUM(su.usage_duration_sec) AS total_seconds
+    FROM service_usage su
+    JOIN devices d ON su.device_id = d.device_id
+    GROUP BY d.device_type, su.service_name, su.date
+),
+engagement_summary AS (
+    SELECT
+        device_type,
+        service_name,
+        AVG(total_seconds) AS avg_daily_usage_sec,
+        SUM(total_seconds) AS total_usage_sec
+    FROM daily_engagement
+    GROUP BY device_type, service_name
+),
+total_usage AS (
+    SELECT SUM(total_usage_sec) AS grand_total
+    FROM engagement_summary
+)
+SELECT
+    es.device_type,
+    es.service_name,
+    ROUND(es.total_usage_sec / 3600.0, 2) AS total_usage_hrs,
+    ROUND((es.total_usage_sec * 100.0 / tu.grand_total), 2) AS pct_of_total_usage,
+    ROUND(es.avg_daily_usage_sec, 0) AS avg_daily_sec
+FROM engagement_summary es
+CROSS JOIN total_usage tu
+ORDER BY pct_of_total_usage DESC;
