@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Task: Amazon Device Engagement Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-bg: #f0f4f8;
+    --card-bg: #ffffff;
+    --accent-color: #2563eb;
+    --secondary-accent: #10b981;
+    --text-color: #1f2937;
+    --code-bg: #1e293b;
+    --code-text: #e2e8f0;
+    --border-light: #e2e8f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    line-height: 1.6;
+    padding: 0 20px 60px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .container {
+    max-width: 960px;
+    width: 100%;
+  }
+
+  /* ── HERO HEADER (dark dramatic, like the dark file) ── */
+  .hero {
+    background: #0a0c10;
+    padding: 0 0 0;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+    position: relative;
+    margin-top: 40px;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+    padding: 48px 48px 42px;
+    text-align: center;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 999px;
+    padding: 5px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #ff6b35;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #ff6b35;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:.4;transform:scale(.8)}
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.2rem, 6vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1.08;
+    background: linear-gradient(135deg, #e8edf5 30%, #00d4ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: #7a8899;
+    margin-bottom: 24px;
+  }
+
+  .author-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,212,255,0.06);
+    border: 1px solid rgba(0,212,255,0.18);
+    border-radius: 12px;
+    padding: 8px 20px;
+  }
+
+  .author-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00d4ff, #ff3cac);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  .author-info { text-align: left; }
+
+  .author-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e8edf5;
+    line-height: 1.2;
+  }
+
+  .author-role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #00d4ff;
+    letter-spacing: 0.08em;
+  }
+
+  /* Threshold strip at bottom of hero */
+  .threshold-strip {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 48px 28px;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+  }
+
+  .t-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 18px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .t-badge.low {
+    background: rgba(255,107,53,0.12);
+    border: 1px solid rgba(255,107,53,0.3);
+    color: #ff6b35;
+  }
+
+  .t-badge.high {
+    background: rgba(57,255,20,0.08);
+    border: 1px solid rgba(57,255,20,0.25);
+    color: #39ff14;
+  }
+
+  /* ── MAIN CARD (light, matches uploaded file) ── */
+  .card {
+    background: var(--card-bg);
+    padding: 36px 40px;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 10px 40px -4px rgba(0,0,0,0.12);
+    margin-bottom: 30px;
+  }
+
+  /* Section headings */
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    border-left: 4px solid var(--accent-color);
+    padding-left: 14px;
+    margin-top: 42px;
+    margin-bottom: 16px;
+  }
+
+  h2:first-of-type { margin-top: 0; }
+
+  h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 24px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  h3::before {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    background: var(--accent-color);
+    opacity: 0.5;
+  }
+
+  /* Problem statement box */
+  .problem-statement {
+    background: #eff6ff;
+    border-left: 5px solid #3b82f6;
+    padding: 18px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-style: italic;
+    color: #1e40af;
+    line-height: 1.7;
+  }
+
+  /* ── TABLES (source data + results) ── */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    margin-top: 10px;
+    margin-bottom: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead tr {
+    background: linear-gradient(90deg, #f1f5f9, #e8f0fe);
+  }
+
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #374151;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+
+  /* Device name highlight */
+  td.dev-echo { color: #0284c7; font-weight: 500; }
+  td.dev-fire { color: #ea580c; font-weight: 500; }
+  td.dev-kindle { color: #7c3aed; font-weight: 500; }
+
+  /* Result label badges */
+  .lbl-high {
+    display: inline-block;
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+    border-radius: 5px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .lbl-low {
+    display: inline-block;
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fdba74;
+    border-radius: 5px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  /* 3-table grid for source data */
+  .tables-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .tables-grid .table-col-full {
+    grid-column: 1 / -1;
+  }
+
+  /* ── SQL CODE BLOCKS ── */
+  .solution-section {
+    margin-top: 28px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .badge-standard {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+  }
+
+  .badge-standard::before {
+    content: '01';
+    background: #1e40af;
+    color: #fff;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 9px;
+  }
+
+  .badge-pro {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+  }
+
+  .badge-pro::before {
+    content: '02';
+    background: #065f46;
+    color: #fff;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 9px;
+  }
+
+  .code-shell {
+    background: var(--code-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+
+  .code-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #0d1117;
+    border-bottom: 1px solid #1e2530;
+  }
+
+  .code-dots { display: flex; gap: 6px; }
+  .code-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dots span:nth-child(1){background:#ff5f57}
+  .code-dots span:nth-child(2){background:#febc2e}
+  .code-dots span:nth-child(3){background:#28c840}
+
+  .code-fname {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #5a6a7a;
+  }
+
+  pre {
+    padding: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.75;
+    color: #c9d1d9;
+    overflow-x: auto;
+    margin: 0;
+  }
+
+  /* Syntax colours */
+  .kw  { color: #ff7b72; font-weight: 500; }
+  .fn  { color: #d2a8ff; }
+  .str { color: #a5d6ff; }
+  .num { color: #ffa657; }
+  .cmt { color: #5a6a7a; font-style: italic; }
+  .al  { color: #79c0ff; }
+  .tbl { color: #7ee787; }
+
+  /* ── RUN BUTTON ── */
+  .run-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #00d4ff;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .run-btn:hover {
+    background: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,212,255,0.35);
+  }
+
+  .run-btn svg { width: 10px; height: 10px; fill: currentColor; }
+
+  /* ── SPINNER ── */
+  .running-indicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 4px 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #2563eb;
+  }
+
+  .running-indicator.show { display: flex; }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(37,99,235,0.2);
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESULTS PANEL ── */
+  .results-wrapper { display: none; margin-top: 14px; }
+  .results-wrapper.visible { display: block; animation: fadeUp 0.35s ease forwards; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .results-ok {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #15803d;
+  }
+
+  .results-ok::before {
+    content: '\2713';
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: 50%;
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .results-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .stat-chip {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+
+  .stat-chip .sv {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+
+  .stat-chip .sl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #94a3b8;
+    letter-spacing: 0.06em;
+  }
+
+  .bar-chart-wrap {
+    margin-top: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  .bar-chart-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #94a3b8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .bar-row:last-child { margin-bottom: 0; }
+
+  .bar-device-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #64748b;
+    width: 96px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 26px;
+    background: #e2e8f0;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    width: 0;
+    transition: width 1s cubic-bezier(0.16,1,0.3,1);
+    white-space: nowrap;
+  }
+
+  .bar-mins-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #374151;
+    width: 54px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+    margin: 36px 0;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    padding: 14px 0 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 620px) {
+    .tables-grid { grid-template-columns: 1fr; }
+    .hero-inner { padding: 32px 24px 28px; }
+    .card { padding: 24px 20px; }
+    .threshold-strip { padding: 12px 20px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">AMAZON DEVICES · SQL ANALYSIS · Q3 2024</div>
+      <h1>Device Usage<br>Categorization</h1>
+      <p class="hero-sub">Categorizing Echo, Fire TV &amp; Kindle engagement — July to September 2024</p>
+      <div class="author-tag">
+        <div class="author-avatar">SK</div>
+        <div class="author-info">
+          <div class="author-name">Sazzad Khan</div>
+          <div class="author-role">BI ANALYST</div>
+        </div>
+      </div>
+    </div>
+    <div class="threshold-strip">
+      <div class="t-badge low">◆ &lt; 300 min → LOW engagement</div>
+      <div class="t-badge high">◆ ≥ 300 min → HIGH engagement</div>
+    </div>
+  </div>
+
+  <!-- ── CARD ── -->
+  <div class="card">
+
+    <!-- Problem Statement -->
+    <h2>Problem Statement</h2>
+    <div class="problem-statement">
+      The team wants to label the usage of each device category into <strong>'Low'</strong> or <strong>'High'</strong> based on usage duration from <strong>July 1, 2024 to September 30, 2024</strong>. If the total usage time was less than 300 minutes, categorize it as <em>'Low'</em>. Otherwise, categorize it as <em>'High'</em>. Return a report with device ID, usage category, and total usage time.
+    </div>
+
+    <!-- Source Tables -->
+    <h2>Source Database Tables</h2>
+
+    <div class="tables-grid">
+
+      <!-- dim_device -->
+      <div>
+        <h3>dim_device</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>device_id</th><th>device_name</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td class="dev-echo">Echo Dot 4th Gen</td></tr>
+              <tr><td>2</td><td class="dev-fire">Fire TV Stick 4K</td></tr>
+              <tr><td>3</td><td class="dev-kindle">Kindle Paperwhite 11th</td></tr>
+              <tr><td>4</td><td class="dev-echo">Echo Show 10</td></tr>
+              <tr><td>5</td><td class="dev-fire">Fire HD 10 Tablet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- dim_service -->
+      <div>
+        <h3>dim_service</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>service_id</th><th>service_name</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Prime Video</td></tr>
+              <tr><td>2</td><td>Amazon Music</td></tr>
+              <tr><td>3</td><td>Alexa Skills</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- fct_device_usage — full width -->
+      <div class="table-col-full">
+        <h3>fct_device_usage — Fact Table (19 rows)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>usage_id</th>
+                <th>device_id</th>
+                <th>service_id</th>
+                <th>usage_date</th>
+                <th>usage_duration_minutes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>1</td><td>1</td><td>2024-07-05</td><td>30</td></tr>
+              <tr><td>2</td><td>2</td><td>1</td><td>2024-07-10</td><td>45</td></tr>
+              <tr><td>3</td><td>3</td><td>2</td><td>2024-07-15</td><td>60</td></tr>
+              <tr><td>4</td><td>4</td><td>1</td><td>2024-08-01</td><td>120</td></tr>
+              <tr><td>5</td><td>5</td><td>2</td><td>2024-08-05</td><td>15</td></tr>
+              <tr><td>6</td><td>1</td><td>3</td><td>2024-08-10</td><td>25</td></tr>
+              <tr><td>7</td><td>2</td><td>2</td><td>2024-08-15</td><td>35</td></tr>
+              <tr><td>8</td><td>3</td><td>1</td><td>2024-09-01</td><td>50</td></tr>
+              <tr><td>9</td><td>4</td><td>2</td><td>2024-09-05</td><td>80</td></tr>
+              <tr><td>10</td><td>5</td><td>3</td><td>2024-09-10</td><td>10</td></tr>
+              <tr><td>11</td><td>1</td><td>1</td><td>2024-07-20</td><td>40</td></tr>
+              <tr><td>12</td><td>2</td><td>3</td><td>2024-07-25</td><td>20</td></tr>
+              <tr><td>13</td><td>3</td><td>2</td><td>2024-08-20</td><td>70</td></tr>
+              <tr><td>14</td><td>4</td><td>1</td><td>2024-08-25</td><td>90</td></tr>
+              <tr><td>15</td><td>5</td><td>2</td><td>2024-09-15</td><td>55</td></tr>
+              <tr><td>16</td><td>1</td><td>2</td><td>2024-09-20</td><td>35</td></tr>
+              <tr><td>17</td><td>2</td><td>1</td><td>2024-09-25</td><td>65</td></tr>
+              <tr><td>18</td><td>3</td><td>3</td><td>2024-07-30</td><td>5</td></tr>
+              <tr><td>19</td><td>4</td><td>2</td><td>2024-08-30</td><td>75</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /tables-grid -->
+
+    <div class="divider"></div>
+
+    <!-- Standard Solution -->
+    <h2>SQL Solutions</h2>
+
+    <div class="solution-section">
+      <span class="badge badge-standard">Standard Solution</span>
+      <div class="code-shell">
+        <div class="code-topbar">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <span class="code-fname">device_usage_basic.sql</span>
+          <button class="run-btn" onclick="runQuery('basic')">
+            <svg viewBox="0 0 10 10"><polygon points="2,1 9,5 2,9"/></svg>RUN
+          </button>
+        </div>
+        <pre><span class="kw">SELECT</span>
+    <span class="al">d</span>.device_id,
+    <span class="fn">SPLIT_PART</span>(<span class="al">d</span>.device_name, <span class="str">' '</span>, <span class="num">1</span>) <span class="kw">AS</span> device_category,
+    <span class="fn">SUM</span>(<span class="al">f</span>.usage_duration_minutes) <span class="kw">AS</span> total_usage_time,
+    <span class="kw">CASE</span>
+        <span class="kw">WHEN</span> <span class="fn">SUM</span>(<span class="al">f</span>.usage_duration_minutes) <span class="kw">&lt;</span> <span class="num">300</span> <span class="kw">THEN</span> <span class="str">'Low'</span>
+        <span class="kw">ELSE</span> <span class="str">'High'</span>
+    <span class="kw">END AS</span> usage_label
+<span class="kw">FROM</span> <span class="tbl">fct_device_usage</span> <span class="al">f</span>
+<span class="kw">JOIN</span> <span class="tbl">dim_device</span> <span class="al">d</span> <span class="kw">ON</span> <span class="al">f</span>.device_id = <span class="al">d</span>.device_id
+<span class="kw">WHERE</span> <span class="al">f</span>.usage_date <span class="kw">BETWEEN</span> <span class="str">'2024-07-01'</span> <span class="kw">AND</span> <span class="str">'2024-09-30'</span>
+<span class="kw">GROUP BY</span> <span class="al">d</span>.device_id, <span class="al">d</span>.device_name;</pre>
+      </div>
+      <div class="running-indicator" id="running-basic"><div class="spinner"></div>Executing query against fct_device_usage...</div>
+      <div class="results-wrapper" id="results-basic">
+        <div class="results-meta">
+          <span class="results-ok">Query executed successfully</span>
+          <span class="results-count" id="count-basic"></span>
+        </div>
+        <div class="table-wrap"><table id="table-basic"></table></div>
+      </div>
+    </div>
+
+    <!-- Pro CTE Solution -->
+    <div class="solution-section">
+      <span class="badge badge-pro">Pro Solution (CTE)</span>
+      <div class="code-shell">
+        <div class="code-topbar">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <span class="code-fname">device_usage_cte.sql</span>
+          <button class="run-btn" onclick="runQuery('cte')">
+            <svg viewBox="0 0 10 10"><polygon points="2,1 9,5 2,9"/></svg>RUN
+          </button>
+        </div>
+        <pre><span class="kw">WITH</span> <span class="tbl">Device_Summary</span> <span class="kw">AS</span> (
+    <span class="cmt">-- Step 1: Clean device names and aggregate usage minutes</span>
+    <span class="kw">SELECT</span>
+        <span class="al">d</span>.device_id,
+        <span class="fn">SPLIT_PART</span>(<span class="al">d</span>.device_name, <span class="str">' '</span>, <span class="num">1</span>) <span class="kw">AS</span> device_category,
+        <span class="fn">SUM</span>(<span class="al">f</span>.usage_duration_minutes) <span class="kw">AS</span> total_usage_time
+    <span class="kw">FROM</span> <span class="tbl">fct_device_usage</span> <span class="al">f</span>
+    <span class="kw">JOIN</span> <span class="tbl">dim_device</span> <span class="al">d</span> <span class="kw">ON</span> <span class="al">f</span>.device_id = <span class="al">d</span>.device_id
+    <span class="kw">WHERE</span> <span class="al">f</span>.usage_date <span class="kw">BETWEEN</span> <span class="str">'2024-07-01'</span> <span class="kw">AND</span> <span class="str">'2024-09-30'</span>
+    <span class="kw">GROUP BY</span> <span class="al">d</span>.device_id, <span class="al">d</span>.device_name
+)
+<span class="cmt">-- Step 2: Apply Low / High label using the pre-computed totals</span>
+<span class="kw">SELECT</span>
+    device_id,
+    device_category,
+    total_usage_time,
+    <span class="kw">CASE</span>
+        <span class="kw">WHEN</span> total_usage_time <span class="kw">&lt;</span> <span class="num">300</span> <span class="kw">THEN</span> <span class="str">'Low'</span>
+        <span class="kw">ELSE</span> <span class="str">'High'</span>
+    <span class="kw">END AS</span> usage_label
+<span class="kw">FROM</span> <span class="tbl">Device_Summary</span>
+<span class="kw">ORDER BY</span> total_usage_time <span class="kw">DESC</span>;</pre>
+      </div>
+      <div class="running-indicator" id="running-cte"><div class="spinner"></div>Executing CTE against Device_Summary...</div>
+      <div class="results-wrapper" id="results-cte">
+        <div class="results-meta">
+          <span class="results-ok">Query executed successfully</span>
+          <span class="results-count" id="count-cte"></span>
+        </div>
+        <div class="table-wrap"><table id="table-cte"></table></div>
+        <div class="stats-row" id="stats-row" style="display:none">
+          <div class="stat-chip"><div class="sv" style="color:#2563eb" id="s-devices">0</div><div class="sl">DEVICES</div></div>
+          <div class="stat-chip"><div class="sv" style="color:#15803d" id="s-high">0</div><div class="sl">HIGH</div></div>
+          <div class="stat-chip"><div class="sv" style="color:#c2410c" id="s-low">0</div><div class="sl">LOW</div></div>
+          <div class="stat-chip"><div class="sv" style="color:#7c3aed" id="s-total">0</div><div class="sl">TOTAL MIN</div></div>
+        </div>
+        <div class="bar-chart-wrap" id="bar-chart" style="display:none">
+          <div class="bar-chart-title">Usage distribution by device — Q3 2024</div>
+          <div id="bars-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Output Results -->
+    <h2>Output Results</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>device_id</th>
+            <th>device_category</th>
+            <th>total_usage_time</th>
+            <th>usage_label</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>4</td><td class="dev-echo">Echo</td><td><strong>365</strong></td><td><span class="lbl-high">High</span></td></tr>
+          <tr><td>3</td><td class="dev-kindle">Kindle</td><td>185</td><td><span class="lbl-low">Low</span></td></tr>
+          <tr><td>2</td><td class="dev-fire">Fire</td><td>165</td><td><span class="lbl-low">Low</span></td></tr>
+          <tr><td>1</td><td class="dev-echo">Echo</td><td>130</td><td><span class="lbl-low">Low</span></td></tr>
+          <tr><td>5</td><td class="dev-fire">Fire</td><td>80</td><td><span class="lbl-low">Low</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /card -->
+
+  <div class="footer">Sazzad Khan | BI Analyst &nbsp;·&nbsp; Amazon Devices SQL Task &nbsp;·&nbsp; Q3 2024</div>
+
+</div>
+<script>
+const dim_device = [
+  {device_id:1, device_name:'Echo Dot 4th Gen'},
+  {device_id:2, device_name:'Fire TV Stick 4K'},
+  {device_id:3, device_name:'Kindle Paperwhite 11th'},
+  {device_id:4, device_name:'Echo Show 10'},
+  {device_id:5, device_name:'Fire HD 10 Tablet'},
+];
+
+const fct_device_usage = [
+  {device_id:1,service_id:1,usage_date:'2024-07-05',usage_duration_minutes:30},
+  {device_id:2,service_id:1,usage_date:'2024-07-10',usage_duration_minutes:45},
+  {device_id:3,service_id:2,usage_date:'2024-07-15',usage_duration_minutes:60},
+  {device_id:4,service_id:1,usage_date:'2024-08-01',usage_duration_minutes:120},
+  {device_id:5,service_id:2,usage_date:'2024-08-05',usage_duration_minutes:15},
+  {device_id:1,service_id:3,usage_date:'2024-08-10',usage_duration_minutes:25},
+  {device_id:2,service_id:2,usage_date:'2024-08-15',usage_duration_minutes:35},
+  {device_id:3,service_id:1,usage_date:'2024-09-01',usage_duration_minutes:50},
+  {device_id:4,service_id:2,usage_date:'2024-09-05',usage_duration_minutes:80},
+  {device_id:5,service_id:3,usage_date:'2024-09-10',usage_duration_minutes:10},
+  {device_id:1,service_id:1,usage_date:'2024-07-20',usage_duration_minutes:40},
+  {device_id:2,service_id:3,usage_date:'2024-07-25',usage_duration_minutes:20},
+  {device_id:3,service_id:2,usage_date:'2024-08-20',usage_duration_minutes:70},
+  {device_id:4,service_id:1,usage_date:'2024-08-25',usage_duration_minutes:90},
+  {device_id:5,service_id:2,usage_date:'2024-09-15',usage_duration_minutes:55},
+  {device_id:1,service_id:2,usage_date:'2024-09-20',usage_duration_minutes:35},
+  {device_id:2,service_id:1,usage_date:'2024-09-25',usage_duration_minutes:65},
+  {device_id:3,service_id:3,usage_date:'2024-07-30',usage_duration_minutes:5},
+  {device_id:4,service_id:2,usage_date:'2024-08-30',usage_duration_minutes:75},
+];
+
+function computeResults(sorted) {
+  const filtered = fct_device_usage.filter(r => {
+    const d = new Date(r.usage_date);
+    return d >= new Date('2024-07-01') && d <= new Date('2024-09-30');
+  });
+  const map = {};
+  filtered.forEach(r => {
+    const dev = dim_device.find(d => d.device_id === r.device_id);
+    if (!dev) return;
+    if (!map[r.device_id]) map[r.device_id] = {
+      device_id: r.device_id,
+      device_category: dev.device_name.split(' ')[0],
+      total_usage_time: 0
+    };
+    map[r.device_id].total_usage_time += r.usage_duration_minutes;
+  });
+  let rows = Object.values(map).map(r => ({...r, usage_label: r.total_usage_time < 300 ? 'Low' : 'High'}));
+  if (sorted) rows.sort((a,b) => b.total_usage_time - a.total_usage_time);
+  return rows;
+}
+
+function devColor(cat) {
+  if (cat==='Echo') return '#0284c7';
+  if (cat==='Fire') return '#ea580c';
+  if (cat==='Kindle') return '#7c3aed';
+  return '#64748b';
+}
+
+function renderTable(id, data) {
+  const t = document.getElementById(id);
+  let h = '<thead><tr><th>DEVICE_ID</th><th>DEVICE_CATEGORY</th><th>TOTAL_USAGE_TIME</th><th>USAGE_LABEL</th></tr></thead><tbody>';
+  data.forEach(r => {
+    const lbl = r.usage_label === 'High'
+      ? '<span class="lbl-high">High</span>'
+      : '<span class="lbl-low">Low</span>';
+    const isBold = r.usage_label === 'High' ? '<strong>' + r.total_usage_time + '</strong>' : r.total_usage_time;
+    h += `<tr><td>${r.device_id}</td><td style="color:${devColor(r.device_category)};font-weight:500">${r.device_category}</td><td>${isBold}</td><td>${lbl}</td></tr>`;
+  });
+  t.innerHTML = h + '</tbody>';
+}
+
+function renderChart(data) {
+  const max = Math.max(...data.map(d => d.total_usage_time));
+  const c = document.getElementById('bars-container');
+  c.innerHTML = data.map(r => {
+    const pct = Math.round((r.total_usage_time / max) * 100);
+    const col = devColor(r.device_category);
+    return `<div class="bar-row">
+      <div class="bar-device-lbl">${r.device_category} #${r.device_id}</div>
+      <div class="bar-track">
+        <div class="bar-fill" data-pct="${pct}" style="background:${col}">
+          ${r.usage_label === 'High' ? '▲ HIGH' : '▽ LOW'}
+        </div>
+      </div>
+      <div class="bar-mins-lbl">${r.total_usage_time} min</div>
+    </div>`;
+  }).join('');
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.pct + '%'; });
+  }, 80);
+}
+
+function runQuery(type) {
+  const runEl  = document.getElementById('running-' + type);
+  const resEl  = document.getElementById('results-' + type);
+  const cntEl  = document.getElementById('count-' + type);
+  runEl.classList.add('show');
+  resEl.classList.remove('visible');
+
+  setTimeout(() => {
+    runEl.classList.remove('show');
+    const data = computeResults(type === 'cte');
+    renderTable('table-' + type, data);
+    cntEl.textContent = data.length + ' rows returned';
+    resEl.classList.add('visible');
+
+    if (type === 'cte') {
+      const high = data.filter(d => d.usage_label === 'High').length;
+      const low  = data.filter(d => d.usage_label === 'Low').length;
+      const tot  = data.reduce((s,d) => s + d.total_usage_time, 0);
+      document.getElementById('s-devices').textContent = data.length;
+      document.getElementById('s-high').textContent = high;
+      document.getElementById('s-low').textContent = low;
+      document.getElementById('s-total').textContent = tot;
+      document.getElementById('stats-row').style.display = 'grid';
+      document.getElementById('bar-chart').style.display = 'block';
+      renderChart(data);
+    }
+  }, 900);
+}
+</script>
+</body>
+</html>
